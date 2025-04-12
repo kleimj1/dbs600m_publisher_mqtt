@@ -50,23 +50,24 @@ https://github.com/kleimj1/dbs600m_mqtt_publisher
 | `dbs600m/status/126`      | Arbeitsmodus (Eco/Charge)  | ✅         | -       |
 
 ### **Steuerung per MQTT:**
-```bash
-# Wechselrichter einschalten:
-mosquitto_pub -h localhost -t dbs600m/command/108 -m "true"
 
-# Arbeitsmodus auf "Charge" setzen:
+### **Wechselrichter einschalten:**
+
+mosquitto_pub -h localhost -t dbs600m/command/108 -m "true"
+---
+### **Arbeitsmodus auf "Charge" setzen:**
 mosquitto_pub -h localhost -t dbs600m/command/126 -m "1"
 
 ---
 
-## 🔍 Device ID & Local Key ermitteln
+### **🔍 Device ID & Local Key ermitteln**
 Melde dich im Tuya IoT Portal an.
 
 Erstelle ein Cloud-Projekt und verknüpfe dein Gerät.
 
 Die Device ID und Local Key findest du in der Geräteübersicht.
 
-## 🏠 Typische Home-Assistant-Entitäten
+### **🏠 Typische Home-Assistant-Entitäten*
 sensor.dbs600m_pv_leistung
 
 sensor.dbs600m_batterie_soc
@@ -75,15 +76,15 @@ switch.dbs600m_wechselrichter
 
 select.dbs600m_arbeitsmodus
 
-## 🛠️ Technische Hinweise
+### **🛠️ Technische Hinweise**
 Abfrageintervall: 10 Sekunden (schont das Gerät)
 
 Discovery Prefix: homeassistant
 
 DPS-Mapping: Vollständige Liste in dps_metadata.py
 
-## ❤️ Beitrag & Support
+### **❤️ Beitrag & Support**
 Fehlt ein DPS-Wert oder hast du Verbesserungsvorschläge?
 ➡️ GitHub Issue erstellen
 
-### 🔌 Viel Erfolg mit deinem DBS600M in Home Assistant!
+### **🔌 Viel Erfolg mit deinem DBS600M in Home Assistant!**
