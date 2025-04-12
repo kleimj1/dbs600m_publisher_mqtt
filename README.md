@@ -66,7 +66,7 @@ Melde dich im Tuya IoT Portal an.
 Erstelle ein Cloud-Projekt und verknüpfe dein Gerät.
 
 Die Device ID und Local Key findest du in der Geräteübersicht.
-
+---
 ### **🏠 Typische Home-Assistant-Entitäten*
 sensor.dbs600m_pv_leistung
 
@@ -75,6 +75,7 @@ sensor.dbs600m_batterie_soc
 switch.dbs600m_wechselrichter
 
 select.dbs600m_arbeitsmodus
+---
 
 ### **🛠️ Technische Hinweise**
 Abfrageintervall: 10 Sekunden (schont das Gerät)
@@ -83,6 +84,7 @@ Discovery Prefix: homeassistant
 
 DPS-Mapping: Vollständige Liste in dps_metadata.py
 
+---
 ### **❤️ Beitrag & Support**
 Fehlt ein DPS-Wert oder hast du Verbesserungsvorschläge?
 ➡️ GitHub Issue erstellen
