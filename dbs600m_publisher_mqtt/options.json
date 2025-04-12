@@ -1,0 +1,10 @@
+{
+    "device_id": "",
+    "local_key": "",
+    "device_ip": "",
+    "mqtt_host": "core-mosquitto",
+    "mqtt_port": 1883,
+    "mqtt_topic": "dabbsson/status",
+    "mqtt_command_topic": "dabbsson/command",
+    "mqtt_discovery_prefix": "homeassistant"
+  }

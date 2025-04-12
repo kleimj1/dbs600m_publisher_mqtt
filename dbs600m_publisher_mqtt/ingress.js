@@ -1,0 +1,43 @@
+console.log("DBS600M{
+  "name": "Dabbsson DBS600M MQTT Publisher",
+  "version": "2.0.0",
+  "slug": "dbs600m_mqtt_publisher",
+  "description": "Sendet DPS-Werte des Dabbsson DBS600M Wechselrichters per MQTT an Home Assistant",
+  "url": "https://github.com/kleimj1/dbs600m_mqtt_publisher",
+  "startup": "application",
+  "boot": "manual",
+  "homeassistant": "2023.0.0",
+  "arch": ["aarch64", "amd64", "armv7", "i386"],
+  "options": {
+    "device_id": "",
+    "local_key": "",
+    "device_ip": "",
+    "mqtt_host": "core-mosquitto",
+    "mqtt_port": 1883,
+    "mqtt_topic": "dbs600m/status",
+    "mqtt_command_topic": "dbs600m/command",
+    "mqtt_discovery_prefix": "homeassistant",
+    "mqtt_user": "",
+    "mqtt_password": ""
+  },
+  "schema": {
+    "device_id": "str",
+    "local_key": "str",
+    "device_ip": "str",
+    "mqtt_host": "str",
+    "mqtt_port": "int",
+    "mqtt_topic": "str",
+    "mqtt_command_topic": "str",
+    "mqtt_discovery_prefix": "str",
+    "mqtt_user": "str",
+    "mqtt_password": "str"
+  },
+  "ingress": false,
+  "panel_icon": "mdi:solar-power",
+  "panel_title": "DBS600M Publisher",
+  "init": false,
+  "hassio_api": false,
+  "hassio_role": "default",
+  "homeassistant_api": false,
+  "host_network": true
+} MQTT Publisher - Ingress loaded");
