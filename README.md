@@ -75,6 +75,7 @@ sensor.dbs600m_batterie_soc
 switch.dbs600m_wechselrichter
 
 select.dbs600m_arbeitsmodus
+
 ---
 
 ### **🛠️ Technische Hinweise**
