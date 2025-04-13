@@ -6,9 +6,9 @@ import threading
 import tinytuya
 import paho.mqtt.client as mqtt
 from dps_metadata import DPS_METADATA
+import tinytuya
 
-# Debug optional aktivieren
-# tinytuya.set_debug()
+tinytuya.set_debug()
 
 # Umgebungsvariablen laden
 DEVICE_ID = os.getenv("DEVICE_ID")
@@ -16,15 +16,15 @@ LOCAL_KEY = os.getenv("LOCAL_KEY")
 DEVICE_IP = os.getenv("DEVICE_IP")
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
-MQTT_TOPIC = os.getenv("MQTT_TOPIC", "dabbsson/dbs600m/status")
-MQTT_COMMAND_TOPIC = os.getenv("MQTT_COMMAND_TOPIC", "dabbsson/dbs600m/command")
+MQTT_TOPIC = os.getenv("MQTT_TOPIC", "dbs600m/status")
+MQTT_COMMAND_TOPIC = os.getenv("MQTT_COMMAND_TOPIC", "dbs600m/command")
 MQTT_DISCOVERY_PREFIX = os.getenv("MQTT_DISCOVERY_PREFIX", "homeassistant")
 MQTT_USER = os.getenv("MQTT_USER", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 
-print("🚀 Starte Dabbsson DBS600M MQTT Publisher...")
+print("🚀 Starte DBS600M MQTT Publisher...")
 
-# Tuya-Gerät initialisieren (OutletDevice für Wechselrichter)
+# Tuya-Gerät initialisieren
 try:
     device = tinytuya.OutletDevice(DEVICE_ID, DEVICE_IP, LOCAL_KEY)
     device.set_version(3.4)
@@ -47,15 +47,10 @@ def on_message(client, userdata, msg):
     try:
         dps_key = msg.topic.split("/")[-1]
         meta = DPS_METADATA.get(dps_key, {})
-        if not meta.get("writable", False):
+        if not meta.get("writable"):
             print(f"⛔️ DPS {dps_key} ist nicht beschreibbar")
             return
-        
         value = json.loads(msg.payload.decode())
-        # Typkonvertierung für enum (z. B. Arbeitsmodus "0"/"1")
-        if meta.get("type") == "enum" and isinstance(value, str):
-            value = value.lower()  # Falls options als Kleinbuchstaben definiert sind
-        
         print(f"➡️ Befehl für DPS {dps_key}: {value}")
         device.set_value(dps_key, value)
     except Exception as e:
@@ -65,74 +60,53 @@ client.on_connect = on_connect
 client.on_message = on_message
 client.connect(MQTT_HOST, MQTT_PORT, 60)
 
-# Discovery-Payload für Home Assistant
+# Discovery-Payload veröffentlichen
+discovered = set()
 def publish_discovery(dps_key):
-    meta = DPS_METADATA.get(dps_key, {})
-    if not meta:
+    if dps_key in discovered:
         return
+    discovered.add(dps_key)
 
+    meta = DPS_METADATA.get(dps_key, {})
     name = meta.get("name", f"DPS {dps_key}")
-    dtype = meta.get("type", "str")
-    unit = meta.get("unit", "")
     writable = meta.get("writable", False)
+    dtype = meta.get("type", "str")
 
-    # Basis-Konfiguration
+    base_id = f"dbs600m_{dps_key}"
+    state_topic = f"{MQTT_TOPIC}/{dps_key}"
+    cmd_topic = f"{MQTT_COMMAND_TOPIC}/{dps_key}"
+
     device_config = {
-        "identifiers": [f"dabbsson_dbs600m_{DEVICE_ID}"],
-        "name": "Dabbsson DBS600M",
+        "identifiers": ["dbs600m_inverter"],
+        "name": "DBS600M Wechselrichter",
         "model": "DBS600M",
-        "manufacturer": "Dabbsson"
+        "manufacturer": "Tuya"
     }
 
     payload = {
-        "name": f"DBS600M {name}",
-        "unique_id": f"dbs600m_{dps_key}_{DEVICE_ID}",
-        "state_topic": f"{MQTT_TOPIC}/{dps_key}",
+        "name": name,
+        "unique_id": base_id,
+        "state_topic": state_topic,
         "device": device_config
     }
 
-    # Komponententyp bestimmen
     component = "sensor"
     if writable:
         if dtype == "bool":
             component = "switch"
-            payload.update({
-                "command_topic": f"{MQTT_COMMAND_TOPIC}/{dps_key}",
-                "payload_on": "true",
-                "payload_off": "false"
-            })
+            payload.update({"command_topic": cmd_topic, "payload_on": "true", "payload_off": "false"})
         elif dtype == "int":
             component = "number"
-            payload.update({
-                "command_topic": f"{MQTT_COMMAND_TOPIC}/{dps_key}",
-                "min": 0,
-                "max": meta.get("max", 10000),  # Default-Werte anpassen
-                "step": meta.get("step", 1)
-            })
+            payload.update({"command_topic": cmd_topic, "min": 0, "max": 1000, "step": 1})
         elif dtype == "enum":
             component = "select"
-            payload.update({
-                "command_topic": f"{MQTT_COMMAND_TOPIC}/{dps_key}",
-                "options": meta.get("options", [])
-            })
+            payload.update({"command_topic": cmd_topic, "options": meta.get("options", [])})
 
-    # Einheiten und Device-Klassen
-    if unit:
-        payload["unit_of_measurement"] = unit
-        if unit == "W":
-            payload["device_class"] = "power"
-        elif unit == "V":
-            payload["device_class"] = "voltage"
-        elif unit == "A":
-            payload["device_class"] = "current"
-        elif unit == "°C":
-            payload["device_class"] = "temperature"
-        elif unit == "%":
-            if "Batterie" in name:
-                payload["device_class"] = "battery"
+    # Zusätzliche Attribute
+    if dtype == "int" and not writable:
+        payload.update({"unit_of_measurement": meta.get("unit"), "device_class": "measurement"})
 
-    # Discovery-Nachricht senden
-    discovery_topic = f"{MQTT_DISCOVERY_PREFIX}/{component}/dbs600m_{dps_key}/config"
+    discovery_topic = f"{MQTT_DISCOVERY_PREFIX}/{component}/dbs600m/{base_id}/config"
     print(f"🛰️ Discovery: {discovery_topic}")
     client.publish(discovery_topic, json.dumps(payload), retain=True)
 
@@ -140,25 +114,17 @@ def publish_discovery(dps_key):
 def publish_loop():
     while True:
         try:
-            data = device.status()
-            dps = data.get("dps", {})
-            print(f"🔍 Empfangene DPS-Daten: {dps}")
-            
+            dps = device.status().get("dps", {})
             for key, value in dps.items():
-                if str(key) in DPS_METADATA:
-                    # Wert für MQTT aufbereiten
-                    if isinstance(value, bool):
-                        val_str = "true" if value else "false"
-                    else:
-                        val_str = str(value)
-                    
+                if key in DPS_METADATA:
+                    val_str = "true" if value is True else "false" if value is False else str(value)
                     topic = f"{MQTT_TOPIC}/{key}"
+                    print(f"📤 DPS {key}: {val_str}")
                     client.publish(topic, val_str, retain=True)
-                    publish_discovery(str(key))
+                    publish_discovery(key)
         except Exception as e:
             print(f"⚠️ Fehler bei Statusabruf: {e}")
-        time.sleep(10)  # Intervall anpassen
+        time.sleep(5)
 
-# Hauptprogramm
 threading.Thread(target=publish_loop, daemon=True).start()
 client.loop_forever()
